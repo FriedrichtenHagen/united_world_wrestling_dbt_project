@@ -1,0 +1,1 @@
+-- dbt --quiet run-operation generate_model_yaml --args '{"model_names": ["stg_athletes", "stg_events", "stg_matches"]}' > models/staging/schema.yml

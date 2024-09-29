@@ -1,16 +1,19 @@
 WITH
 events AS (
-    SELECT *
+    SELECT
+        {{ dbt_utils.star(from=ref('events')) }}
     FROM {{ ref('events') }}
 ),
 
 cast_types AS (
     SELECT
         title,
-        created,
-        changed,
+        strptime(created, '%m/%d/%Y %H:%M:%S') AS created_at_timestamp,
+        strptime(changed, '%m/%d/%Y %H:%M:%S') AS changed_at_timestamp,
+
         -- field_arena_id,
         CAST(event_start_date AS DATE) AS event_start_date,
+        EXTRACT(YEAR FROM CAST(event_start_date AS DATE)) AS event_year,
         CAST(event_end_date AS DATE) AS event_end_date,
         -- field_enable_preview,
         field_streaming_available AS is_streaming_available,
@@ -31,8 +34,27 @@ cast_types AS (
         -- alias,
         status
     FROM events
+),
+
+add_surrogate_key AS (
+    SELECT
+        {{ dbt_utils.generate_surrogate_key([
+				'title',
+                'event_year',
+                'country_code'
+			])
+		}} as tournament_key,
+        *
+    FROM cast_types    
 )
 
+-- there are tournaments that take place in different locations for:
+-- 'wrestling_types',
+-- 'age_group',
 
+-- SELECT tournament_key, count(*) FROM add_surrogate_key
+-- GROUP BY 1
+-- ORDER BY 2 DESC
 
-SELECT * FROM cast_types
+SELECT * FROM add_surrogate_key
+WHERE tournament_key = 'd03e8168d5ec87eca5b04055bcae50b7'
