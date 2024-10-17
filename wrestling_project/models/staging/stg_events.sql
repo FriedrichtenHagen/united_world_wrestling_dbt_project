@@ -41,12 +41,13 @@ add_surrogate_key AS (
         {{ dbt_utils.generate_surrogate_key([
 				'title',
                 'event_year',
-                'country_code'
+                'country_code',
+                'results_url'
 			])
 		}} as tournament_key,
         *
     FROM cast_types    
-)
+),
 
 -- there are tournaments that take place in different locations for:
 -- 'wrestling_types',
@@ -56,5 +57,16 @@ add_surrogate_key AS (
 -- GROUP BY 1
 -- ORDER BY 2 DESC
 
-SELECT * FROM add_surrogate_key
-WHERE tournament_key = 'd03e8168d5ec87eca5b04055bcae50b7'
+
+-- c775bc52a93f461afffb5dbd76692eb2 is a tournament duplicate
+remove_duplicates AS (
+    SELECT * FROM add_surrogate_key
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY 
+        title,
+        event_year,
+        country_code,
+        results_url
+    ) = 1
+)
+
+SELECT * FROM remove_duplicates
